@@ -1,0 +1,86 @@
+---
+
+# file: infrakit.yml
+
+- hosts: all
+  become: yes
+  tasks:
+    - name: Install common packages
+      apt:
+        update_cache: yes
+        name: "{{ item }}"
+        autoremove: yes
+      with_items:
+        - vim
+        - git
+
+    - name: Test if go is already installed
+      shell: ls -tlr /usr/local/go
+      register: go_result
+      ignore_errors: true
+
+    - name: Create the destination directory for downloading go
+      file:
+        state: directory
+        path: /tmp/go_downloads
+        mode: 0644
+      when: go_result.rc != 0
+
+    - name: Download golang
+      get_url:
+        url: https://storage.googleapis.com/golang/go1.7.1.linux-amd64.tar.gz
+        dest: /tmp/go_downloads/go1.7.1.tar.gz
+        mode: 0644
+      when: go_result.rc != 0
+
+    - name: Extract golang packages
+      shell: tar -C /usr/local -xzf /tmp/go_downloads/go1.7.1.tar.gz
+      when: go_result.rc != 0
+
+    - name: Remove temporal directories
+      file:
+        state: absent
+        path: /tmp/go_downloads
+
+    - name: Create golang conventional directories
+      file:
+        state: directory
+        path: "/go/{{ item }}"
+        mode: 0644
+      with_items:
+        - bin
+        - pkg
+        - src
+
+    - name: Setting PATH environment variable
+      blockinfile:
+        create: yes
+        dest: /etc/profile.d/environment.sh
+        block: |
+          export GOPATH=/go
+          export PATH=$PATH:/usr/local/go/bin:/go/bin
+        state: present
+        mode: 0755
+
+    - name: Clone infrakit repository
+      git:
+        repo: https://github.com/docker/infrakit.git
+        dest: "/go/src/github.com/docker/infrakit"
+
+    - name: Install dependencies
+      shell: "{{ item }}"
+      args:
+        chdir: /go/src/github.com/docker/infrakit
+      with_items:
+        - "GOPATH=/go PATH=$PATH:/usr/local/go/bin:/go/bin go get -u github.com/kardianos/govendor"
+        - "GOPATH=/go PATH=$PATH:/usr/local/go/bin:/go/bin go get -u github.com/golang/lint/golint"
+
+    - name: Run tests
+      shell: GOPATH=/go PATH=$PATH:/usr/local/go/bin:/go/bin make ci
+      args:
+        chdir: /go/src/github.com/docker/infrakit
+
+    - name: Create binaries
+      shell: GOPATH=/go PATH=$PATH:/usr/local/go/bin:/go/bin make -k infrakit
+      args:
+        chdir: /go/src/github.com/docker/infrakit
