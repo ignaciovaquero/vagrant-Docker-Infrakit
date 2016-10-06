@@ -95,12 +95,3 @@
       shell: GOPATH=/go PATH=$PATH:/usr/local/go/bin:/go/bin make -k infrakit
       args:
         chdir: /go/src/github.com/docker/infrakit
-
-    - name: Create default directory for Plugin Discovery
-      become: yes
-      file:
-        state: directory
-        path: "/run/infrakit/plugins"
-        owner: vagrant
-        group: vagrant
-        mode: 0777
