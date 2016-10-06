@@ -9,6 +9,12 @@ cd Infrakit_test
 vagrant init ivaquero/Docker_Infrakit
 vagrant up --provider virtualbox
 vagrant ssh
+
+# You will find that infrakit tools are installed at 
+# /go/src/github.com/docker/infrakit or you can access them
+# via the environment variable INFRAKIT_PATH
+
+cd $INFRAKIT_PATH # This takes you directly to infrakit main repo
 ```
 
 This box is hosted on [Atlas by Hashicorp](https://atlas.hashicorp.com/ivaquero/boxes/Docker_Infrakit).
