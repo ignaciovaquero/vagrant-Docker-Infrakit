@@ -10,6 +10,7 @@ Vagrant.configure("2") do |config|
   config.vm.synced_folder "ansible/", "/vagrant"
 
   config.vm.provision "ansible_local" do |ansible|
+    ansible.version = "2.1.2"
     ansible.playbook = "infrakit.yml"
   end
 end
